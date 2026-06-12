@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
-import api from "./services/api.js";
+import { useState, useCallback, useMemo } from "react";
+import { useImageSearch } from "./hooks/useImageSearch.js";
+import { useModal } from "./hooks/useModal.js";
 
 import { Searchbar } from "./components/Searchbar/Searchbar.jsx";
 import { ImageGallery } from "./components/ImageGallery/ImageGallery.jsx";
@@ -10,55 +11,29 @@ import { Modal } from "./components/Modal/Modal.jsx";
 import { Wrapper, ErrorText, EmptyText } from "./App.styled.js";
 
 function App() {
-  const [images, setImages] = useState([]);
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [selectedImage, setSelectedImage] = useState(null);
 
-  useEffect(() => {
-    if (!query) return;
+  const { images, setImages, isLoading, error } = useImageSearch(query, page);
 
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
+  const { selectedImage, openModal, closeModal } = useModal();
 
-        const newImages = await api.fetchImages(query, page);
-
-        setImages((prev) => (page === 1 ? newImages : [...prev, ...newImages]));
-      } catch (error) {
-        setError(error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [query, page]);
-
-  const handleSearch = useCallback((query) => {
-    setQuery(query);
-    setImages([]);
-    setPage(1);
-  }, []);
+  const handleSearch = useCallback(
+    (query) => {
+      setQuery(query);
+      setImages([]);
+      setPage(1);
+    },
+    [setImages],
+  );
 
   const handleLoadMore = useCallback(() => {
     setPage((prev) => prev + 1);
   }, []);
 
-  const openModal = useCallback((image) => {
-    setSelectedImage(image);
-  }, []);
-
-  const closeModal = useCallback(() => {
-    setSelectedImage(null);
-  }, []);
-
   const isEmpty = useMemo(() => {
     return !isLoading && images.length === 0 && query;
-  }, [isLoading, images, query]);
+  }, [isLoading, images.length, query]);
 
   return (
     <Wrapper>
